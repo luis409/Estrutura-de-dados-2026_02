@@ -5,10 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SAT 1
-#define UNSAT 0
-#define UNDEFINED 2
-
 #define MAX_CLAUSES 1000
 #define MAX_VARS 100
 
@@ -28,7 +24,6 @@ typedef struct formule {
 } formule_t;
 
 int assignment[MAX_VARS + 1];
-
 int trail[MAX_VARS];
 int trail_size = 0;
 
@@ -38,6 +33,7 @@ void undo_to(int m) {
     while (trail_size > m) {
         int var = trail[--trail_size];
         assignment[var] = 0;
+
     }
 }
 void assign(int var, int val) {
@@ -69,16 +65,16 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+
     formule_t F;
     memset(&F, 0, sizeof(F));
     read_dimacs(argv[1], &F);
 
-    int assign[MAX_VARS + 1] = {0};
 
     if (dpll(&F, choose_variable_moms) == SAT) {
         printf("SAT\n");
         for (int v = 1; v <= F.num_vars; v++) {
-            printf("x%d = %s\n", v, assign[v] == 1 ? "true" : "false");
+            printf("x%d = %s\n", v, assignment[v] == 1? "true" : "false");
         }
     } else {
         printf("UNSAT\n");
@@ -135,7 +131,7 @@ int unit_propagate(formule_t *F) {
                 int val = (ultimo_livre > 0)? 1 : -1;
 
                 if (assignment[var] != 0 && assignment[var] != val) return -1;
-                assignment[var] = val;
+                assign(var, val);
                 mudou = 1;
                 propagou = 1;
             }
@@ -145,8 +141,8 @@ int unit_propagate(formule_t *F) {
 }
 
 int choose_variable_simple(formule_t *F) {
-    for (int v = 1; v <= F->num_clauses; v++) {
-        if (assignment[v] == 0) return 0;
+    for (int v = 1; v <= F->num_vars; v++) {
+        if (assignment[v] == 0) return v;
     }
     return 0;
 }
@@ -200,10 +196,13 @@ int dpll(formule_t *F, int(*choose_variable)(formule_t *)) {
     if (todas_sat) { return SAT; }
 
     int var = choose_variable(F);
-    if (var == 0) return UNSAT;
+    if (var == 0) {
+        undo_to(mark_save);
+        return UNSAT;
+    }
 
     assign(var, 1);
-    assignment[var] = 1;
+
     if (dpll(F, choose_variable) == SAT) return SAT;
     undo_to(mark_save);
 
@@ -223,11 +222,12 @@ void read_dimacs(const char *filename, formule_t *F) {
     char buffer[256];
     int idx = 0;
     F->num_vars = 0;
-
+    printf("\tDisplay input:\n");
     while (fgets(buffer, sizeof(buffer), file)) {
+        printf("%s", buffer);
         if (buffer[0] == 'c') continue;
         if (buffer[0] == 'p') {
-            sscanf(buffer, "%d %d", &F->num_vars, &F->num_clauses);
+            sscanf(buffer, "p cnf %d %d", &F->num_vars, &F->num_clauses);
             continue;
         }
         clause_t c;
@@ -242,5 +242,6 @@ void read_dimacs(const char *filename, formule_t *F) {
         if (c.size > 0) F->clauses[idx++] = c;
     }
     F->num_clauses = idx;
+    printf("\tLidas %d clausulas, num_vars = %d\n", idx, F->num_vars);
     fclose(file);
 }
