@@ -23,26 +23,16 @@ typedef struct formule {
     int num_vars;
 } formule_t;
 
-int assignment[MAX_VARS + 1];
-int trail[MAX_VARS];
+int assignment[MAX_VARS + 1]; //GUARDA AS ATRIBUIÇÔES
+int trail[MAX_VARS]; // GUARDA OS INDICES DAS ATRIBUIÇÕES
 int trail_size = 0;
 
-int mark(){ return trail_size; }
+int mark();
+void undo_to(int m);
+void assign(int var, int val);
 
-void undo_to(int m) {
-    while (trail_size > m) {
-        int var = trail[--trail_size];
-        assignment[var] = 0;
-
-    }
-}
-void assign(int var, int val) {
-    assignment[var] = val;
-    trail[trail_size++] = var;
-}
-
-int literal_true(int lit);
-int literal_false(int lit);
+int literal_true(int lit); //RETORNA 1 PARA TRUE E 0 PARA FALSE OU LIVRE
+int literal_false(int lit);//
 int clause_status(clause_t *c);
 
 int unit_propagate(formule_t *F);
@@ -53,7 +43,6 @@ int unit_propagate(formule_t *F);
 int choose_variable_simple(formule_t *F);
 int choose_variable_moms(formule_t *F);
 int choose_variable_dlis(formule_t *F);
-int choose_variable_vsids(formule_t *F);
 
 int dpll(formule_t *F, int(*choose_variable)(formule_t *));
 
@@ -82,27 +71,53 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
+//RETORNA O TAMANHO DA TRILHA
+int mark() {
+    return trail_size;
+}
+//LIMPA, DE CIMA PARA BAIXO ATÉ "m"
+void undo_to(int m) {
+    while (trail_size > m) {
+        int var = trail[--trail_size];
+        assignment[var] = 0;
+    }
+}
+//ASSINA "var" COM "val (1 OU -1)"
+void assign(int var, int val) {
+    assignment[var] = val;
+    trail[trail_size++] = var;
+}
+
+//RETORNA 1 PARA TRUE E 0 PARA FALSE OU LIVRE
+//LIVRE: LITERAL QUE AINDA NÃO FOI ASSINADO
 int literal_true(int lit) {
     int var = abs(lit);
     int val = assignment[var];
-    if (val == 0) return 0;
+    if (val == 0) return 0; // VARIÀVEL LIVRE
     return (lit > 0 && val == 1) || (lit < 0 && val == -1);
 }
+//RETORNA 1 PARA FLASE E 0 PARA TRUE OU LIVRE
 int literal_false(int lit) {
     int var = abs(lit);
     int val = assignment[var];
-    if (val == 0) return 0;
+    if (val == 0) return 0; // VARIÀVEL LIVRE
     return (lit < 0 && val == 1) || (lit > 0 && val == -1);
 }
+//TRUE,FALSE OU LIVRE
 int clause_status(clause_t *c) {
     int tem_livre = 0;
     for (int i = 0; i < c->size; i++) {
         if (literal_true(c->literals[i])) return SAT;
+        //
+        // OU SEJA, A DADA "CLAUSULA" ESTA SATISFEITA, EX:
+        //(X1 OR X2 OR 3 OR .. OR Xn)
+        //APENAS UM TRUE JÁ É VÁLIDO, PARA A "CLAUSULA"
+        //
         if (!literal_false(c->literals[i])) tem_livre = 1;
     }
     return tem_livre? UNDEFINED : UNSAT;
 }
-
+//RETORNA 0 SE NÃO HÁ PROPAGAÇÂO, RETORNA -1 SE HOUVE CONFLITO NA PROPAGAÇÂO
 int unit_propagate(formule_t *F) {
     int mudou = 1;
     int propagou = 0;
@@ -117,7 +132,7 @@ int unit_propagate(formule_t *F) {
             if (status == SAT) continue;
 
             int livres = 0;
-            int ultimo_livre = 0;
+            int ultimo_livre = 0; //IMPORTANTE VARA SALVAR EM CASO DE UNITÁRIA
             for (int j = 0; j < c->size; j++) {
                 int lit = c->literals[j];
                 if (!literal_true(lit) && !literal_false(lit)) {
@@ -125,12 +140,10 @@ int unit_propagate(formule_t *F) {
                     ultimo_livre  = lit;
                 }
             }
-
+            // VARIÁVEL UNITÁRIA
             if (livres == 1) {
                 int var = abs(ultimo_livre);
                 int val = (ultimo_livre > 0)? 1 : -1;
-
-                if (assignment[var] != 0 && assignment[var] != val) return -1;
                 assign(var, val);
                 mudou = 1;
                 propagou = 1;
@@ -139,13 +152,60 @@ int unit_propagate(formule_t *F) {
     }
     return propagou;
 }
+int dpll(formule_t *F, int(*choose_variable)(formule_t *)) {
+    //SALVO O INDICE ATUAL DE tail
+    int mark_save = mark();
 
+    int prop = unit_propagate(F);
+    //SE HÁ CONFLITO
+    if (prop == -1) {
+        undo_to(mark_save);
+        return UNSAT;
+    }
+    //TODAS AS CLAUSULAS SÃO SAT?
+    int todas_sat = 1;
+    for (int i = 0; i < F->num_clauses; i++) {
+        if (clause_status(&F->clauses[i]) != SAT) {
+            todas_sat = 0;
+            break;
+        }
+    }
+    if (todas_sat) { return SAT; }
+
+    //CHOOSE VAR DE ACORDO COM A HEURÍSTICA PASSADA
+    int var = choose_variable(F);
+    //NENHUMA VARIÁVEL LIVRE
+    if (var == 0) {
+        undo_to(mark_save);
+        return UNSAT;
+    }
+
+    //*
+    //O unit_propagate atribui várias variáveis.
+    //Se ele usa assignment[var] = val direto,
+    //o dpll não sabe quais variáveis desfazer.
+    //*//
+    assign(var, 1);
+    if (dpll(F, choose_variable) == SAT) return SAT;
+    undo_to(mark_save);
+    assign(var, -1);
+    if (dpll(F, choose_variable) == SAT) return SAT;
+    undo_to(mark_save);
+
+    return UNSAT;
+}
+//HEURISTICAS
+
+//PRIMEIRA VARIÁVEL LIVRE
 int choose_variable_simple(formule_t *F) {
     for (int v = 1; v <= F->num_vars; v++) {
         if (assignment[v] == 0) return v;
     }
+    //TODAS AS VARIÁVEIS FORAM DEFINIDAS
     return 0;
 }
+//VARIÁVEL EM CLAUSULAS CURTAS
+//Maximum Occurrences in clauses of Minimum Size(MOMS)
 int choose_variable_moms(formule_t *F) {
     double best_score = -1.0;
     int best_var = 0;
@@ -160,7 +220,7 @@ int choose_variable_moms(formule_t *F) {
 
             for (int j = 0; j < c->size; j++) {
                 if (abs(c->literals[j]) == v) {
-                    score += 1.0 / (1 << c->size);
+                    score += 1.0 / (1 << c->size); //QUANTO MAIOR A CLAUSULA, MENOR O SCORE
                     break;
                 }
             }
@@ -173,44 +233,30 @@ int choose_variable_moms(formule_t *F) {
     }
     return best_var;
 }
-
-//int choose_variable_dlis(formule_t *F);
-//int choose_variable_vsids(formule_t *F);
-
-int dpll(formule_t *F, int(*choose_variable)(formule_t *)) {
-    int mark_save = mark();
-
-    int prop = unit_propagate(F);
-    if (prop == -1) {
-        undo_to(mark_save);
-        return UNSAT;
-    }
-
-    int todas_sat = 1;
-    for (int i = 0; i < F->num_clauses; i++) {
-        if (clause_status(&F->clauses[i]) != SAT) {
-            todas_sat = 0;
-            break;
+//FOCO EM OCORRENCIAS TOTAIS
+//Dynamic Largest Individual Sum
+int choose_variable_dlis(formule_t *F) {
+    int best_count = -1;
+    int best_var = 0;
+    for (int v = 1; v <= F->num_vars; v++) {
+        if (assignment[v] != 0) continue;
+        int count = 0;
+        for (int i = 0; i < F->num_clauses; i++) {
+            clause_t *c = &F->clauses[i];
+            if (clause_status(c) != UNDEFINED) continue;
+            for (int j = 0; j < c->size; j++) {
+                if (abs(c->literals[j]) == v) {
+                    count++;
+                    break;
+                }
+            }
+        }
+        if (count > best_count) {
+            best_count = count;
+            best_var = v;
         }
     }
-    if (todas_sat) { return SAT; }
-
-    int var = choose_variable(F);
-    if (var == 0) {
-        undo_to(mark_save);
-        return UNSAT;
-    }
-
-    assign(var, 1);
-
-    if (dpll(F, choose_variable) == SAT) return SAT;
-    undo_to(mark_save);
-
-    assign(var, -1);
-    if (dpll(F, choose_variable) == SAT) return SAT;
-    undo_to(mark_save);
-
-    return UNSAT;
+    return best_var;
 }
 
 void read_dimacs(const char *filename, formule_t *F) {
