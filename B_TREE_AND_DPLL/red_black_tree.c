@@ -151,17 +151,18 @@ void rb_insert_fixup(tree_t *T, node_t *z) {
         if (z->parent == z->parent->parent->left) {
             y = z->parent->parent->right;
             if (y->color == RED) {
-                z->parent->color = BLACK;
-                y->color = BLACK;
-                z = z->parent->parent;
+                z->parent->color = BLACK;            // caso 1
+                y->color = BLACK;                    // caso 1
+                z->parent->parent->color = RED;      // caso 1
+                z = z->parent->parent;               // caso 1
             }else {
                 if (z == z->parent->right) {
-                    z = z->parent;
-                    left_rotate(T, z);
+                    z = z->parent;                   // caso 2
+                    left_rotate(T, z);               // caso 2
                 }
-                z->parent->color = BLACK;
-                z->parent->parent->color = RED;
-                right_rotate(T, z->parent->parent);
+                z->parent->color = BLACK;            // caso 3
+                z->parent->parent->color = RED;      // caso 3
+                right_rotate(T, z->parent->parent);  // caso 3
             }
         }else {
             y = z->parent->parent->left;    // tio
