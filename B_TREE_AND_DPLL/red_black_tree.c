@@ -79,25 +79,21 @@ tree_t *initialize_tree() {
     tree_t *tree = (tree_t *)malloc(sizeof(tree_t));
     tree->nil = (node_t *)malloc(sizeof(node_t));
 
-    tree->nil->left   = tree->nil;   // ✅ aponta pra si mesmo
-    tree->nil->right  = tree->nil;   // ✅
-    tree->nil->parent = tree->nil;   // ✅
+    tree->nil->left   = tree->nil;    
+    tree->nil->right  = tree->nil;   
+    tree->nil->parent = tree->nil;  
     tree->nil->item   = NULL;
     tree->nil->color  = BLACK;
 
-    tree->root = tree->nil;          // ✅ raiz = nil (árvore vazia)
+    tree->root = tree->nil;         
     return tree;
 }
 
 void left_rotate(tree_t *T, node_t *x) {
     node_t *y = x->right;
-
-    // 1. B vira filho direito de x
     x->right = y->left;
     if (y->left != T->nil)
-        y->left->parent = x;          // ✅ B->parent = x
-
-    // 2. y sobe: herda o pai de x
+        y->left->parent = x;          
     y->parent = x->parent;
     if (x->parent == T->nil)
         T->root = y;
@@ -105,8 +101,6 @@ void left_rotate(tree_t *T, node_t *x) {
         x->parent->left = y;
     else
         x->parent->right = y;
-
-    // 3. x vira filho esquerdo de y (SÓ NO FINAL!)
     y->left = x;
     x->parent = y;
 }
