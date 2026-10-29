@@ -16,3 +16,10 @@ O repositório está organizado nas seguintes pastas:
 *   **Linguagem principal:** C (C99 ou superior)
 *   **Ambiente de desenvolvimento:** Arch Linux (testado com GCC)
 *   **Bibliotecas:** Biblioteca padrão do C (`stdio.h`, `stdlib.h`, `string.h`, etc.)
+
+## 👥 Equipe
+
+| Membro | Função | Foto |
+| :--- | :--- | :---: |
+| Luis Gabriel | Desenvolvedor Principal | ![Luis](assets/luis.jpg) |
+| Outro Membro | Documentação | ![Outro](assets/outro.jpg) |
