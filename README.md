@@ -6,7 +6,7 @@ Repositório destinado aos códigos, trabalhos e algoritmos desenvolvidos durant
 
 O repositório está organizado nas seguintes pastas:
 
-*   **`B_TREE_AND_DPLL/`**: Implementações relacionadas a Árvores B e ao algoritmo DPLL (utilizado para solucionar o problema de satisfatibilidade booleana - SAT).
+*   **`B_TREE_AND_DPLL/`**: Implementações relacionadas Red Black Tree e ao algoritmo DPLL (utilizado para solucionar o problema de satisfatibilidade booleana - SAT).
 *   **`HUFFMAN/`**: Implementação do Algoritmo de Huffman para compressão e descompressão de arquivos (incluindo o tratamento de lixo e reconstrução da árvore via cabeçalho).
 *   **`PLOTAGEM/`**: Scripts e ferramentas utilizadas para gerar gráficos e visualizações de dados (provavelmente relacionados à análise de complexidade dos algoritmos).
 *   **`SAT/`**: Códigos focados na resolução do Problema de Satisfatibilidade Booleana.
@@ -21,5 +21,5 @@ O repositório está organizado nas seguintes pastas:
 
 | Membro | Função | Foto |
 | :--- | :--- | :---: |
-| Luis Gabriel | Desenvolvedor Principal | ![Luis](assets/luis.jpg) |
-| Outro Membro | Documentação | ![Outro](assets/outro.jpg) |
+| Luis Gabriel D.C. Alencar| Desenvolvedor | ![Luis](assets/luis.jpg) |
+| Kessy Jhonatan Olegario  | Desenvolvedor| ![Kessy](assets/outro.jpg) |
